@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Narrative visualization by Shruti Kalia (kshruti89)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="stylesheets/normalize.css"
+      media="screen"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans:200,500"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="stylesheets/stylesheet.css"
+      media="screen"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="stylesheets/github-light.css"
+      media="screen"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="stylesheets/custom.css"
+      media="screen"
+    />
+  </head>
+
+  <body onload="init()">
+    <section class="page-header1">
+      <h1 class="project-name">Summer Olympics 1976-2008</h1>
+    </section>
+    <div class="w3-bar w3-teal">
+      <a
+        href="#"
+        onclick="navigate('previous');"
+        class="w3-bar-item w3-button"
+        style="width: 27%;"
+        ><<</a
+      >
+      <a
+        href="#"
+        onclick="navigate('summary');"
+        class="w3-bar-item w3-button"
+        style="width: 15%;"
+        >Summary</a
+      >
+      <a
+        href="#"
+        onclick="navigate('medalsby');"
+        class="w3-bar-item w3-button w3-green"
+        style="width: 15%;"
+        >Medals By</a
+      >
+      <a
+        href="#"
+        onclick="navigate('medalsdetail');"
+        class="w3-bar-item w3-button"
+        style="width: 15%;"
+        >Medals Detail</a
+      >
+      <a
+        href="#"
+        onclick="navigate('next');"
+        class="w3-bar-item w3-button"
+        style="width: 28%;"
+        >>></a
+      >
+    </div>
+    <section class="main-content">
+      <h3>
+        <span aria-hidden="true" class="octicon octicon-link"></span>Medals by Game Type from 1976 to 2008
+      </h3>
+      <div class="tooltip1">
+	  <p>
+        Count of Medals by Game Type belonging to a <mark class="teal">Sport</mark> attribute or <mark class="teal">Discipline</mark>.
+      </p>	 
+	  <p>
+		By <mark class="teal">default</mark> shows <mark class="teal">Count of Medals </mark>belonging to different <mark class="teal">Sports</mark>.
+        Any selection of a <mark class="teal">Country</mark> from the previous page will set the chart accordingly.
+	  </p>
+        Chart can be viewed interactively by selecting the <mark class="teal">Country</mark> and <mark class="teal">Games Type</mark>
+        from the drop down below.        
+	      </br>
+      </p>
+      <div id="selectchoice">
+        <div id="selectdiv"></div>
+        <div id="bydiv"></div>
+      </div>
+      <div>
+        <div></br></div>
+        <div class="tooltip1"> 
+          <label id="chartlabel" for="chartlabel"></label>
+        </div>
+        <svg width="600" height="600"></svg>
+      </div>
+
+      <footer class="site-footer">
+        <div class="tooltip2">
+        <mark class="teal">Previous[<<]</mark> or <mark class="teal">Next[>>]</mark> buttons on the menu bar help to navigate and view author set charts.
+        </br>
+        <span class="site-footer-credits">
+         Alternatively, clicking on the chart provides interactivity to view corresponsing data on the charts.
+        </span>
+        </div>
+      </footer>
+    </section>
+
+    <script>
+      //Global Variable
+      var data; // this one holds csv data
+      var chartdata; //this will hold chart data at any point of time
+      var countrydata = [];
+      var totalmedals;
+      var topcountries = []; // Top country Keys
+      var origin;
+      var originby = 'Sport';  //default
+      var margin = {
+        top: 50,
+        right: 50,
+        bottom: 50,
+        left: 50,
+      };
+      var width = 800;
+      var height = 500;
+      var xwidth = width - 2 * margin.right - 2 * margin.left;
+      var yheight = height - 2 * margin.top - 2 * margin.bottom;
+      const addfactor = 10;
+
+      var currentPage = "scene2.html";
+      var nextPage = "scene3.html";
+      var previousPage = "scene1.html";
+      var summaryPage = "scene1.html";
+      var medalsbyPage = "scene2.html";
+      var medalsdetailPage = "scene3.html";
+
+      function navigate(action) {
+        if (action == "next") {
+          dest = nextPage;
+        } else if (action == "previous") {
+          dest = previousPage;
+        } else if (action == "summary") {
+          dest = summaryPage;
+        } else if (action == "medalsby") {
+          dest = medalsbyPage;
+        } else if (action == "medalsdetail") {
+          dest = medalsdetailPage;
+        } else dest = "#";
+        window.location = dest;
+      }      
+
+      //Function to do array value sum
+      Array.prototype.sum = function (prop) {
+        var total = 0;
+        for (var i = 0, _len = this.length; i < _len; i++) {
+          total += this[i][prop];
+        }
+        return total;
+      }
+
+      // Function to check if key exists in array
+      function keyExists(keyval) {
+        return topcountries.some(function(el) {
+        return el === keyval;
+      }); 
+}      
+
+      //Function to Load Countries list
+      function loadCountries() {
+        var seldata = d3
+          .nest()																									
+          .key(function (d) {
+            return d.Country == "" ? "None" : d.Country;
+          })
+          .rollup(function (d) {
+            return d3.sum(d, function (g) {
+              return 1;
+            });
+          })
+          .entries(data);
+		// get total medals
+        totalmedals = seldata.sum("value");
+
+        seldata.sort(function (a, b) {
+          return d3.descending(+a.value, +b.value);
+        });
+		// Top 10 elements
+        countrydata = seldata.slice(0, 10);
+		//Storing top country names
+        topcountries = countrydata.map(d => {return d.key;});
+
+        newElement = [{ key: "All Countries", value: totalmedals }];
+		// added others as the first element  
+        countrydata = countrydata.concat(newElement);      
+
+        //Now load data to the select
+        var countrylabel = document.createElement("label");
+        countrylabel.innerHTML =
+          "Country : " + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+        countrylabel.htmlFor = "countries";
+
+        var selectcountry = document.createElement("select");                                                                                   
+        selectcountry.name = "country";
+        selectcountry.id = "country";
+        selectcountry.addEventListener("change", function (event) {
+          origin = document.getElementById("country").value;
+          initializeChartData();
+          showChart();
+        });
+		
+        for (const val of countrydata) {
+          gametypeoption = document.createElement("option");
+          gametypeoption.value = val.key;
+          gametypeoption.text = val.key + " : " + val.value;
+          if (val.key == origin) gametypeoption.selected = true;
+          selectcountry.appendChild(gametypeoption);
+        }
+
+        //First remove all elements and then add
+        document.getElementById("selectdiv").innerHTML = null;
+        document
+          .getElementById("selectdiv")
+          .appendChild(countrylabel)
+          .appendChild(selectcountry);
+        
+        var brelement = document.createElement("p");
+        document
+          .getElementById("selectdiv")
+          .appendChild(brelement); 
+
+        // ***** adding by select ******
+        var bylabel = document.createElement("label");
+        bylabel.innerHTML =
+          "Game Type : ";
+          bylabel.htmlFor = "by"; 
+
+        var selectby = document.createElement("select");
+        selectby.name = "by";
+        selectby.id = "by";
+        selectby.addEventListener("change", function (event) {
+          originby = document.getElementById("by").value;
+          //Show chart
+          initializeChartData();
+          showChart();
+        });
+ 
+        byoption = document.createElement("option");
+        byoption.value = 'Sport';
+        byoption.text = 'Sport';
+        selectby.appendChild(byoption);         
+        byoption = document.createElement("option");
+        byoption.value = 'Discipline';
+        byoption.text = 'Discipline';
+        selectby.appendChild(byoption);       
+        
+        //First remove all elements and then add
+        document.getElementById("bydiv").innerHTML = null;
+        document
+          .getElementById("bydiv")
+          .appendChild(bylabel)
+          .appendChild(selectby);
+      }
+
+      function loadPage(id) {
+        //replace space and & character for url 
+        var originwsa = origin.replace('+','`').replace(' & ','~').replace(' ', '^');
+        var originbywsa = originby.replace('+','`').replace(' & ','~').replace(' ', '^');
+        var originbyvalwsa = id.replace('+','`').replace(' & ','~').replace(' ', '^');
+        dest = "scene3.html" + "?origin=" + originwsa + "&originby=" + originbywsa + "&originbyval=" + originbyvalwsa;
+        window.location = dest;
+      }
+
+      //Function called on body onload
+      async function init() {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        origin =
+          urlParams.get("origin") == undefined ||
+          urlParams.get("origin") == null ||
+          urlParams.get("origin") == ""
+            ? "All Countries"
+            : urlParams.get("origin");
+        data = await d3.csv("data/Summer-Olympic-medals-1976-to-2008.csv");
+
+        loadCountries();
+        initializeChartData();
+        showChart();
+      }
+
+      //Function to form chart data depending on selection
+      function initializeChartData() {
+        var keyval;
+        //Form data per origin by
+        if (originby === 'Discipline') {
+          chartdata = d3
+          .nest()
+          .key(function (d) {
+            if (d.Discipline == "") keyval = "Unknown";
+            else if (d.Discipline == "-1") keyval = "Unknown";
+            else keyval = d.Discipline;
+            if (origin == "All Countries") return keyval;
+            else if (origin == "All Other Countries") {
+              if (keyExists(d.Country)) return "Filter";
+              else return keyval;
+            }             
+            else if (d.Country == origin) return keyval;
+            else return "Filter";
+          })
+          .rollup(function (d) {
+            return d3.sum(d, function (g) {
+              return 1;
+            });
+          })
+          .entries(data);
+        } 
+        else if (originby === 'Sport') {
+          chartdata = d3
+          .nest()
+          .key(function (d) {
+            if (d.Sport == "") keyval = "Unknown";
+            else if (d.Sport == "-1") keyval = "Unknown";
+            else keyval = d.Sport;
+            if (origin == "All Countries") return keyval;
+            else if (origin == "All Other Countries") {
+              if (keyExists(d.Country)) return "Filter";
+              else return keyval;
+            }               
+            else if (d.Country == origin) return keyval;
+            else return "Filter";
+          })
+          .rollup(function (d) {
+            return d3.sum(d, function (g) {
+              return 1;
+            });
+          })
+          .entries(data);
+        }  
+      }      
+
+      //Function to draw chart
+      function showChart() {
+        var data2 = [];
+        var toodata;
+        chartdata.sort(function (a, b) {
+          return d3.descending(+a.value, +b.value);
+        });
+
+        //Removing "Filter" record - as it is for other than the passed origin
+        var data2 = chartdata.filter((x) => {
+          return x.key != "Filter";
+        });
+
+        if(origin == 'All Other Countries') {
+          toodata = data2;
+        } else {
+          toodata = data2.slice(0, 10); // Top 10 elements
+        }   
+
+        //X-scale
+        var xs = d3
+          .scaleBand()
+          .domain(
+            toodata.map(function (d) {
+              return d.key;
+            })
+          )
+          .range([0, xwidth]);
+
+        //y-scale
+        var ys = d3
+          .scaleLinear()
+          .domain([
+            d3.min(toodata, function (d) {
+              return d.value;
+            }),
+            d3.max(toodata, function (d) {
+              return d.value;
+            }),
+          ])
+          .range([yheight, 0]);
+
+        var colorrn = d3.scaleOrdinal(d3.schemeCategory10); //Color should be same as Donut chart
+
+        // Tool Tip mouse hover
+        var tooltip = d3
+          .select("body")
+          .append("div")
+          .attr("class", "tooltip")
+          .style("position", "absolute")
+          .style("z-index", 10)
+          .style("visibility", "hidden")
+          .text("Simple text");
+
+        //Before drawing chart set everything to blank
+        document.getElementById("chartlabel").innerHTML = "Below" + "<mark class='green'> Chart </mark>" + " shows: " +
+          "Distribution of Medals for <mark class='teal'>" + origin + "</mark> by top 10 in Game type (<mark class='teal'>" + originby + "</mark>)" + " by total medal count";
+
+        d3.select("svg").selectAll("*").remove();
+
+        // Chart
+        d3.select("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr(
+            "transform",
+            "translate(" + margin.right + "," + margin.bottom + ")"
+          )
+          .selectAll("rect")
+          .data(toodata)
+          .enter()
+          .append("rect")
+          .attr("x", function (d, i) {
+            return xs(d.key);
+          })
+          .attr("y", function (d) {
+            return ys(d.value);
+          })
+          .attr("width", xs.bandwidth())
+          .attr("height", function (d) {
+            return addfactor + (yheight - ys(d.value));
+          })
+          .attr("fill", function (d) {
+            return colorrn(d.key);
+          })
+          .text((d) => d.value)
+          .on("mouseover", (d) => {
+            var selobject = countrydata.find(a => a.key == origin);
+            var textval = selobject.key + " : " + selobject.value;
+            textval = textval + "</br>" + d.key + " : " + d.value.toFixed(0) + ' Medals';
+            tooltip.html(textval);
+            return tooltip.style("visibility", "visible");
+          })
+          .on("mousemove", function () {
+            return tooltip
+              .style("top", d3.event.pageY - 10 + "px")
+              .style("left", d3.event.pageX + 10 + "px");
+          })
+          .on("mouseout", () => tooltip.style("visibility", "hidden"))
+          .on("click", (d) => {
+            loadPage(d.key);
+          });
+                
+
+        //y - axis
+        d3.select("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr(
+            "transform",
+            "translate(" +
+              margin.right +
+              "," +
+              (addfactor + margin.bottom) +
+              ")"
+          )
+          .call(
+            d3
+              .axisLeft(ys)
+			  .ticks(6)
+              //.tickValues([0, 20, 40, 60, 80, 100])
+              .tickFormat(d3.format("~s"))
+          );
+
+        // text label for the y axis
+        d3.select("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr(
+            "transform",
+            "translate(" + margin.right + "," + margin.bottom + ")"
+          )
+          .append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 0 - margin.left)
+          .attr("x", 0 - yheight / 2)
+          .attr("dy", ".75em")
+          .style("text-anchor", "middle")
+          .style("font", "Arial")
+          .style("font-size", "11px")
+          .style("font-weight", "bold")
+          .text("Total Medal Count");
+
+        // x- axis
+        d3.select("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr(
+            "transform",
+            "translate(" +
+              margin.right +
+              "," +
+              (addfactor + yheight + margin.bottom) +
+              ")"
+          ) 
+          .call(d3.axisBottom(xs))
+          .selectAll("text")
+          .attr("y", 0)
+          .attr("x", 10)
+          .attr("dy", ".35em")
+          .attr("transform", "rotate(90)")
+          .style("text-anchor", "start")
+          .style("font", "Arial")
+          .style("font-size", "11px")
+          .style("font-weight", "bold");
+      }
+    </script>
+  </body>
+</html>

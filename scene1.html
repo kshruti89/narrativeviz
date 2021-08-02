@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Narrative visualization by Shruti Kalia (kshruti89)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="stylesheets/normalize.css"
+      media="screen"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans:200,500"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="stylesheets/stylesheet.css"
+      media="screen"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="stylesheets/github-light.css"
+      media="screen"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="stylesheets/custom.css"
+      media="screen"
+    />
+  </head>
+
+  <body onload="init()">
+    <section class="page-header1">
+      <h1 class="project-name">Summer Olympics 1976-2008</h1>
+    </section>
+    <div class="w3-bar w3-teal">
+      <a
+        href="#"
+        onclick="navigate('previous');"
+        class="w3-bar-item w3-button"
+        style="width: 27%;"
+        ><<</a
+      >
+      <a
+        href="#"
+        onclick="navigate('summary');"
+        class="w3-bar-item w3-button w3-green"
+        style="width: 15%;"
+        >Summary</a
+      >
+      <a
+        href="#"
+        onclick="navigate('medalsby');"
+        class="w3-bar-item w3-button"
+        style="width: 15%;"
+        >Medals By</a
+      >
+      <a
+        href="#"
+        onclick="navigate('medalsdetail');"
+        class="w3-bar-item w3-button"
+        style="width: 15%;"
+        >Medals Detail</a
+      >
+      <a
+        href="#"
+        onclick="navigate('next');"
+        class="w3-bar-item w3-button"
+        style="width: 28%;"
+        >>></a
+      >
+    </div>
+    <section class="main-content">
+      <h3>
+        <span aria-hidden="true" class="octicon octicon-link"></span>Medal Count from 1976 to 2008
+      </h3>
+      <div class="tooltip1">
+        The Olympic Games are the world's truly global, multi-sport, celebratory athletics competition.
+		Below is an overview of dataset taken from Kaggle with Summer Olympics Medal for 32 years starting from 1976. The charts 
+        provide an insight into the <mark class="teal">countries</mark> winning 
+        <mark class="teal">the maximum number of medals</mark> in Olympics from 1976 to 2008.
+	  </br></br>
+	  	<mark class="green">Bar Chart at Left</mark> shows top 10 <mark class="teal">Countries</mark> with
+		 <mark class="teal">Highest Medal Count</mark> and <mark class="green">Donut Chart at Right</mark> shows <mark class="red">percentages <mark class="teal"> of Medal Count </mark></mark> by <mark class="teal"> Countries</mark>
+      </div>
+
+      <div>
+        <svg width="600" height="600"></svg>
+      </div>
+
+      <footer class="site-footer">
+		<div class="tooltip2">
+		<mark class="teal">Previous[<<]</mark> or <mark class="teal">Next[>>]</mark> buttons on the menu bar help to navigate and view author set charts.
+		</br>
+		<span class="site-footer-credits">
+	     Alternatively, clicking on the chart provides interactivity to view corresponsing data on the charts.
+		</span>
+		</div>
+      </footer>
+    </section>
+
+    <script>
+      var currentPage = "scene1.html";
+      var nextPage = "scene2.html";
+      var previousPage = "scene1.html";
+      var summaryPage = "scene1.html";
+      var medalsbyPage = "scene2.html";
+      var medalsdetailPage = "scene3.html";
+
+      function navigate(action) {
+        if (action == "next") {
+          dest = nextPage;
+        } else if (action == "previous") {
+          dest = previousPage;
+        } else if (action == "summary") {
+          dest = summaryPage;
+        } else if (action == "medalsby") {
+          dest = medalsbyPage;
+        } else if (action == "medalsdetail") {
+          dest = medalsdetailPage;
+        } else dest = "#";
+        window.location = dest;
+      }
+
+      async function init() {
+        var margin = {
+          top: 50,
+          right: 50,
+          bottom: 50,
+          left: 50,
+        };
+        var width = 1000;
+        var height = 500;
+        var xwidth = width / 2 - 2 * margin.right - 2 * margin.left;
+        var yheight = height - 2 * margin.top - 2 * margin.bottom;
+        const addfactor = 10;
+        const data = await d3.csv("data/Summer-Olympic-medals-1976-to-2008.csv");
+
+        function loadPage(id) {
+          dest = "scene2.html" + "?origin=" + id;
+          window.location = dest;
+        }
+
+        //Bar Chart
+        var data1 = d3
+          .nest()
+          .key(function (d) {
+            return d.Country == "" ? "None" : d.Country;
+          })
+          .rollup(function (d) {
+            return d3.sum(d, function (g) {
+              return 1;
+            });
+          })
+          .entries(data);
+
+        data1.sort(function (a, b) {
+          return d3.descending(+a.value, +b.value);
+        });
+		
+		// Take top 10 Countries
+        var showbarchartdata = data1.slice(0, 10); 
+
+        //X-scale
+        var xs = d3
+          .scaleBand()
+          .domain(
+            showbarchartdata.map(function (d) {
+              return d.key;
+            })
+          )
+          .range([0, xwidth]);
+
+        //y-scale
+        var ys = d3
+          .scaleLinear()
+          .domain([
+            d3.min(showbarchartdata, function (d) {
+              return d.value;
+            }),
+            d3.max(showbarchartdata, function (d) {
+              return d.value;
+            }),
+          ])
+          .range([yheight, 0]);
+
+        var colorrn = d3.scaleOrdinal(d3.schemeCategory10); //Color should be same as Donut Chart
+
+        // Tooltip for mouse hover
+        var tooltip = d3
+          .select("body")
+          .append("div")
+          .attr("class", "tooltip")
+          .style("position", "absolute")
+          .style("z-index", 10)
+          .style("visibility", "hidden")
+          .text("Simple text");
+
+        // Chart
+        d3.select("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr(
+            "transform",
+            "translate(" + margin.right + "," + margin.bottom + ")"
+          )
+          .selectAll("rect")
+          .data(showbarchartdata)
+          .enter()
+		  .append("rect")
+		  .attr("data-html", "true")
+          .attr("x", function (d, i) {
+            return xs(d.key);
+          })
+          .attr("y", function (d) {
+            return ys(d.value);
+          })
+          .attr("width", xs.bandwidth())
+          .attr("height", function (d) {
+            return addfactor + (yheight - ys(d.value));
+          })
+          .attr("fill", function (d) {
+	       	return colorrn(d.key);
+          })
+		  .text((d) => d.value)
+          .on("mouseover", (d) => {
+			var textvalue = "Total medals: " + totalMedals;
+			textvalue = textvalue + "</br>" + (d.key + " : " + d.value.toFixed(0) + ' Medals');
+            tooltip.html(textvalue);
+            return tooltip.style("visibility", "visible");
+          })
+          .on("mousemove", function () {
+            return tooltip
+              .style("top", d3.event.pageY - 10 + "px")
+              .style("left", d3.event.pageX + 10 + "px");
+          })
+          .on("mouseout", () => tooltip.style("visibility", "hidden"))
+          .on("click", (d) => {
+            loadPage(d.key);
+          });
+
+        //y - axis
+        d3.select("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr(
+            "transform",
+            "translate(" +
+              margin.right +
+              "," +
+              (addfactor + margin.bottom) +
+              ")"
+          )
+          .call(
+            d3
+              .axisLeft(ys)
+			  .ticks(6)
+              .tickFormat(d3.format("~s"))
+          );
+
+        // text label for the y axis
+        d3.select("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr(
+            "transform",
+            "translate(" + margin.right + "," + margin.bottom + ")"
+          )
+          .append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 0 - margin.left)
+          .attr("x", 0 - yheight / 2)
+          .attr("dy", ".75em")
+          .style("text-anchor", "middle")
+          .style("font", "Arial")
+          .style("font-size", "11px")
+          .style("font-weight", "bold")
+          .text("Total Medal Count");
+
+        // x- axis
+        d3.select("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr(
+            "transform",
+            "translate(" +
+              margin.right +
+              "," +
+              (addfactor + yheight + margin.bottom) +
+              ")"
+          )
+          .call(d3.axisBottom(xs))
+          .selectAll("text")
+          .attr("y", 0)
+          .attr("x", 10)
+          .attr("dy", ".35em")
+          .attr("transform", "rotate(90)")
+          .style("text-anchor", "start")
+          .style("font", "Arial")
+          .style("font-size", "10px")
+          .style("font-weight", "bold");
+
+		//Donut Chart
+		var othercountrydata = data1.slice(10); // Rest all elements
+		var othercountrycount = othercountrydata.reduce((acc, d) => acc + d.value, 0);
+		var showdonutdata = data1.slice(0,11);
+		showdonutdata[10] = {"key":"All Other Countries", "value":othercountrycount};
+        var radius = 150;
+        var totalMedals = d3.sum(showdonutdata, (d) => d.value); //Find total number of medals
+
+        var donutchartdata = showdonutdata.map(function (d) {
+          var percentagevalue = (d.value / totalMedals) * 100;
+          return percentagevalue;
+        });
+        var color = d3.schemeCategory10;
+        var donut = d3.pie();
+        var arc = d3.arc().innerRadius(100).outerRadius(radius);
+        var arcData = donut(donutchartdata);
+        var colorOrd = d3.scaleOrdinal(d3.schemeCategory10);
+
+        function getKey(index) {
+          return showdonutdata[index].key;
+        }
+
+        var g = d3
+          .select("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr("transform", "translate(" + 550 + "," + 190 + ")")
+          .selectAll("path")
+          .data(arcData)
+          .enter();
+
+        g.append("path")
+          .attr("d", arc)
+          .attr("fill", function (d, i) {
+			if(i == 10)
+				return "#E2E2E2";
+			else 
+				return colorOrd(i);
+          })
+          .text((d) => d.value)
+          .on("mouseover", function (d, i) {
+            d3.select(this)
+              .style("stroke", "black")
+              .style("stroke-width", "2px");
+            tooltip.text(getKey(i) + " : " + d3.format(".1f")(d.value) + " %");
+            return tooltip.style("visibility", "visible");
+          })
+          .on("mousemove", function () {
+            return tooltip
+              .style("top", d3.event.pageY - 10 + "px")
+              .style("left", d3.event.pageX + 10 + "px");
+          })
+          .on("mouseout", function () {
+            d3.select(this)
+              .style("stroke", "white")
+              .style("stroke-width", "1px");
+            tooltip.style("visibility", "hidden");
+          })
+          .on("click", (d, i) => {
+            loadPage(getKey(i));
+          });
+
+        // Arc defined just for label below
+        var labelArc = d3
+          .arc()
+          .innerRadius(radius + 14)
+          .outerRadius(radius + 40);
+
+        //Printing labels
+        g.append("text")
+          .attr("transform", function (d) {
+            return "translate(" + labelArc.centroid(d) + ")";
+          })
+          .text(function (d, i) {
+            return Math.round(d.value, 0) < 2
+              ? ""
+              : d3.format(".1f")(d.value) + " %";
+          })
+          .style("fill", 'black')
+          .style("font", "Arial")
+          .style("font-size", "10px")
+          .style("font-weight", "bold");
+
+        //X-scale
+        var xs1 = d3
+          .scaleBand()
+          .domain(
+            showdonutdata.map(function (d) {
+              return;
+            })
+          )
+          .range([0, xwidth]);
+      }
+    </script>
+  </body>
+</html>
